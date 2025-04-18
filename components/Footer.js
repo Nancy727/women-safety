@@ -109,9 +109,9 @@ const Footer = () => {
           <p className="text-sm text-purple-300">&copy; {new Date().getFullYear()} SafeGuardian. All rights reserved.</p>
           <div className="mt-4 md:mt-0">
             <ul className="flex space-x-6 text-sm text-purple-300">
-              <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
             </ul>
           </div>
         </div>

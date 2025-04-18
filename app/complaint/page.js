@@ -17,6 +17,8 @@ export default function ComplaintPage() {
   const [previousComplaints, setPreviousComplaints] = useState([]);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sendingSOS, setSendingSOS] = useState(false);
+  const [sosStatus, setSOSStatus] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -81,6 +83,45 @@ export default function ComplaintPage() {
     }
   };
 
+  const handleEmergencySOS = async () => {
+    try {
+      setSendingSOS(true);
+      setSOSStatus(null);
+      setError(null);
+      
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await fetch('/api/emergency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSOSStatus(`Emergency alert sent to ${data.successCount} contacts`);
+        if (data.failedCount > 0) {
+          setSOSStatus(prev => `${prev}. ${data.failedCount} messages failed to send.`);
+        }
+      } else {
+        setError(data.message || 'Failed to send emergency alert');
+      }
+    } catch (error) {
+      console.error('Error sending emergency alert:', error);
+      setError(error.message || 'An error occurred while sending emergency alert');
+    } finally {
+      setSendingSOS(false);
+    }
+  };
+
   const fetchPreviousComplaints = async () => {
     try {
       setComplaintsLoading(true);
@@ -115,7 +156,7 @@ export default function ComplaintPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-black text-white py-36 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-black text-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">File a Complaint</h1>
@@ -134,6 +175,12 @@ export default function ComplaintPage() {
           </div>
         )}
 
+        {sosStatus && (
+          <div className="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg mb-6">
+            {sosStatus}
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-6">
           <Link
             href="/dashboard"
@@ -141,12 +188,28 @@ export default function ComplaintPage() {
           >
             Back to Dashboard
           </Link>
-          <button
-            onClick={togglePreviousComplaints}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-          >
-            {showPreviousComplaints ? 'Hide Previous Complaints' : 'View Previous Complaints'}
-          </button>
+          <div className="space-x-2 flex">
+            <button
+              onClick={togglePreviousComplaints}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+            >
+              {showPreviousComplaints ? 'Hide Previous Complaints' : 'View Previous Complaints'}
+            </button>
+            <button
+              onClick={handleEmergencySOS}
+              className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-800 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-900 transition-all duration-200 flex items-center"
+              disabled={sendingSOS}
+            >
+              {sendingSOS ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              )}
+              Emergency SOS
+            </button>
+          </div>
         </div>
 
         {showPreviousComplaints && (
