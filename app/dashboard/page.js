@@ -478,11 +478,11 @@ export default function Dashboard() {
               <h2 className="text-xl font-semibold text-white mb-4">Emergency Helplines</h2>
               <ul className="space-y-3">
                 {[
-                  { name: "Women's Helpline", number: "1800-XXX-XXXX" },
+                  { name: "Women's Helpline", number: "181" },
                   { name: "Police Emergency", number: "100" },
                   { name: "Ambulance", number: "102" },
-                  { name: "Domestic Violence", number: "1800-XXX-XXXX" },
-                  { name: "Cyber Crime", number: "1800-XXX-XXXX" }
+                  { name: "Domestic Violence", number: "87930 88841" },
+                  { name: "Cyber Crime", number: "1930" }
                 ].map((helpline, i) => (
                   <li key={i} className="bg-purple-900/20 rounded-lg p-3 border border-purple-800/40">
                     <div className="flex justify-between items-center">

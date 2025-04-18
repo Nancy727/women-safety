@@ -23,21 +23,61 @@ const Navbar = () => {
       }
     };
 
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsLoggedIn(true);
-    }
+    // Function to update login state
+    const checkLoginState = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+          setIsLoggedIn(true);
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+          localStorage.removeItem('user');
+          setIsLoggedIn(false);
+          setUser(null);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    };
+
+    // Check login state initially
+    checkLoginState();
+
+    // Listen for storage events (for when user logs in/out in another tab)
+    const handleStorageChange = () => {
+      checkLoginState();
+    };
+
+    // Add this to the useEffect hook
+    const handleUserLogin = () => {
+      checkLoginState();
+    };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("userLogin", handleUserLogin);
+
+    // Run check on mount and re-run whenever component re-renders
+    // This will ensure the navbar updates after login/signup/logout
+    checkLoginState();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("userLogin", handleUserLogin);
+    };
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
     setIsLoggedIn(false);
     setUser(null);
+    
+    // Dispatch a custom event to notify components that user logged out
+    window.dispatchEvent(new Event('userLogout'));
+    
     router.push('/');
   };
 
@@ -106,12 +146,16 @@ const Navbar = () => {
                 >
                   Home
                 </Link>
-                <Link 
-                  href="/dashboard" 
-                  className="hover:bg-purple-800 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                >
-                  Dashboard
-                </Link>
+                
+                {isLoggedIn && (
+                  <Link 
+                    href="/dashboard" 
+                    className="hover:bg-purple-800 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                
                 {isLoggedIn && (
                   <Link
                     href="/complaint"
@@ -120,18 +164,21 @@ const Navbar = () => {
                     File Complaint
                   </Link>
                 )}
+                
                 <Link 
                   href="/about" 
                   className="hover:bg-purple-800 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                 >
                   About Us
                 </Link>
+                
                 <Link 
                   href="/contact" 
                   className="hover:bg-purple-800 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                 >
                   Contact Us
                 </Link>
+                
                 {isLoggedIn ? (
                   <>
                     <button 
@@ -139,6 +186,18 @@ const Navbar = () => {
                       className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:from-pink-600 hover:to-purple-700 transition-all duration-200"
                     >
                       Logout
+                    </button>
+                    
+                    <button
+                      onClick={handleEmergencyClick}
+                      className="bg-gradient-to-r from-red-600 to-red-800 text-white px-4 py-2 rounded-md text-sm font-medium hover:from-red-700 hover:to-red-900 transition-all duration-200 shadow-md hover:shadow-lg animate-pulse hover:animate-none"
+                      disabled={emergencyLoading}
+                    >
+                      {emergencyLoading ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></div>
+                      ) : (
+                        'Emergency Help'
+                      )}
                     </button>
                   </>
                 ) : (
@@ -149,17 +208,6 @@ const Navbar = () => {
                     Login/Signup
                   </Link>
                 )}
-                <button
-                  onClick={handleEmergencyClick}
-                  className="bg-gradient-to-r from-red-600 to-red-800 text-white px-4 py-2 rounded-md text-sm font-medium hover:from-red-700 hover:to-red-900 transition-all duration-200 shadow-md hover:shadow-lg animate-pulse hover:animate-none"
-                  disabled={emergencyLoading}
-                >
-                  {emergencyLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block"></div>
-                  ) : (
-                    'Emergency Help'
-                  )}
-                </button>
               </div>
             </div>
             
@@ -214,13 +262,17 @@ const Navbar = () => {
           >
             Home
           </Link>
-          <Link
-            href="/dashboard"
-            className="block text-white hover:text-purple-300 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Dashboard
-          </Link>
+          
+          {isLoggedIn && (
+            <Link
+              href="/dashboard"
+              className="block text-white hover:text-purple-300 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Dashboard
+            </Link>
+          )}
+          
           {isLoggedIn && (
             <Link
               href="/complaint"
@@ -230,6 +282,7 @@ const Navbar = () => {
               File Complaint
             </Link>
           )}
+          
           <Link
             href="/contact"
             className="block text-white hover:text-purple-300 transition-colors"
@@ -237,16 +290,29 @@ const Navbar = () => {
           >
             Contact
           </Link>
-          {user ? (
-            <button
-              onClick={() => {
-                handleLogout();
-                setIsMenuOpen(false);
-              }}
-              className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:from-pink-700 hover:to-purple-700 transition-all duration-200"
-            >
-              Logout
-            </button>
+          
+          {isLoggedIn ? (
+            <>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:from-pink-700 hover:to-purple-700 transition-all duration-200"
+              >
+                Logout
+              </button>
+              
+              <button
+                onClick={() => {
+                  handleEmergencyClick();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-2 rounded-lg font-medium hover:from-red-700 hover:to-red-900 transition-all duration-200"
+              >
+                Emergency Help
+              </button>
+            </>
           ) : (
             <Link
               href="/login"

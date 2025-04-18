@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SuccessPopup from '@/components/SuccessPopup';
@@ -14,6 +14,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,6 +53,9 @@ export default function Login() {
 
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Dispatch a custom event to notify components that user logged in
+      window.dispatchEvent(new Event('userLogin'));
       
       setShowSuccess(true);
       setTimeout(() => {
